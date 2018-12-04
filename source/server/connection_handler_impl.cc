@@ -137,6 +137,24 @@ ConnectionHandlerImpl::findActiveListenerByAddress(const Network::Address::Insta
   return (listener_it != listeners_.end()) ? listener_it->second.get() : nullptr;
 }
 
+void ConnectionHandlerImpl::ActiveSocket::onTimeout() {
+  listener_.stats_.downstream_pre_cx_timeout_.inc();
+  ASSERT(inserted());
+  unlink();
+}
+
+void ConnectionHandlerImpl::ActiveSocket::startTimer() {
+  timer_ = listener_.parent_.dispatcher_.createTimer([this]() -> void { onTimeout(); });
+  timer_->enableTimer(std::chrono::milliseconds(15000));
+}
+
+void ConnectionHandlerImpl::ActiveSocket::unlink() {
+  ActiveSocketPtr removed = removeFromList(listener_.sockets_);
+  ASSERT(removed->timer_ != nullptr);
+  removed->timer_.reset();
+  listener_.parent_.dispatcher_.deferredDelete(std::move(removed));
+}
+
 void ConnectionHandlerImpl::ActiveSocket::continueFilterChain(bool success) {
   if (success) {
     if (iter_ == accept_filters_.end()) {
@@ -180,8 +198,7 @@ void ConnectionHandlerImpl::ActiveSocket::continueFilterChain(bool success) {
 
   // Filter execution concluded, unlink and delete this ActiveSocket if it was linked.
   if (inserted()) {
-    ActiveSocketPtr removed = removeFromList(listener_.sockets_);
-    listener_.parent_.dispatcher_.deferredDelete(std::move(removed));
+    unlink();
   }
 }
 
@@ -198,6 +215,7 @@ void ConnectionHandlerImpl::ActiveListener::onAccept(
   // Move active_socket to the sockets_ list if filter iteration needs to continue later.
   // Otherwise we let active_socket be destructed when it goes out of scope.
   if (active_socket->iter_ != active_socket->accept_filters_.end()) {
+    active_socket->startTimer();
     active_socket->moveIntoListBack(std::move(active_socket), sockets_);
   }
 }
