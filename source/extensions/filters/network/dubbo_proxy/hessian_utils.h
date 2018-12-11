@@ -6,6 +6,8 @@
 
 #include "envoy/buffer/buffer.h"
 
+#include "absl/strings/string_view.h"
+
 namespace Envoy {
 namespace Extensions {
 namespace NetworkFilters {
@@ -35,6 +37,7 @@ public:
   static void readNull(Buffer::Instance& buffer);
   static std::chrono::milliseconds readDate(Buffer::Instance& buffer);
   static std::string readByte(Buffer::Instance& buffer);
+  static void writeString(Buffer::Instance& buffer, const std::string& str);
 };
 
 } // namespace DubboProxy

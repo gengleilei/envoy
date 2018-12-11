@@ -10,41 +10,42 @@ namespace DubboProxy {
 TEST(MessageMetadataTest, Fields) {
   MessageMetadata metadata;
 
-  EXPECT_FALSE(metadata.method_name().has_value());
-  EXPECT_THROW(metadata.method_name().value(), absl::bad_optional_access);
+  EXPECT_FALSE(metadata.hasMethodName());
+  EXPECT_THROW(metadata.method_name(), absl::bad_optional_access);
   metadata.setMethodName("method");
-  EXPECT_TRUE(metadata.method_name().has_value());
+  EXPECT_TRUE(metadata.hasMethodName());
   EXPECT_EQ("method", metadata.method_name());
 
-  EXPECT_FALSE(metadata.service_version().has_value());
-  EXPECT_THROW(metadata.service_version().value(), absl::bad_optional_access);
+  EXPECT_FALSE(metadata.hasServiceVersion());
+  EXPECT_THROW(metadata.service_version(), absl::bad_optional_access);
   metadata.setServiceVersion("1.0.0");
-  EXPECT_TRUE(metadata.service_version().has_value());
-  EXPECT_EQ("1.0.0", metadata.service_version().value());
+  EXPECT_TRUE(metadata.hasServiceVersion());
+  EXPECT_EQ("1.0.0", metadata.service_version());
 
-  EXPECT_FALSE(metadata.service_group().has_value());
-  EXPECT_THROW(metadata.service_group().value(), absl::bad_optional_access);
+  EXPECT_FALSE(metadata.hasServiceGroup());
+  EXPECT_THROW(metadata.service_group(), absl::bad_optional_access);
   metadata.setServiceGroup("group");
-  EXPECT_TRUE(metadata.service_group().has_value());
-  EXPECT_EQ("group", metadata.service_group().value());
+  EXPECT_TRUE(metadata.hasServiceGroup());
+  EXPECT_EQ("group", metadata.service_group());
 }
 
 TEST(MessageMetadataTest, Headers) {
   MessageMetadata metadata;
 
   EXPECT_FALSE(metadata.hasHeaders());
-  metadata.addHeader("k", "v");
-  EXPECT_EQ(metadata.headers().size(), 1);
+  metadata.addHeaderValue("k", "v");
+  EXPECT_EQ(metadata.headers_size(), 1);
 }
 
 TEST(MessageMetadataTest, Parameters) {
   MessageMetadata metadata;
 
   EXPECT_FALSE(metadata.hasParameters());
-  metadata.addParameterValue(0, "test");
+  metadata.addParameterValue(0, "string", "test");
   EXPECT_TRUE(metadata.hasParameters());
-  EXPECT_EQ(metadata.parameters().size(), 1);
+  EXPECT_EQ(metadata.parameters_size(), 1);
   auto parameter = metadata.getParameterValue(0);
+  EXPECT_EQ(parameter->type_, "string");
   EXPECT_EQ(parameter->value_, "test");
   EXPECT_EQ(metadata.getParameterValue(1), nullptr);
 }

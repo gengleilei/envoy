@@ -2,7 +2,8 @@
 
 #include "envoy/registry/registry.h"
 
-#include "extensions/filters/network/dubbo_proxy/filter.h"
+#include "extensions/filters/network/dubbo_proxy/conn_manager.h"
+#include "extensions/filters/network/dubbo_proxy/conn_manager_config.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -10,16 +11,13 @@ namespace NetworkFilters {
 namespace DubboProxy {
 
 Network::FilterFactoryCb DubboProxyFilterConfigFactory::createFilterFactoryFromProtoTyped(
-    const envoy::extensions::filters::network::dubbo_proxy::v2alpha1::DubboProxy& proto_config,
+    const envoy::config::filter::network::dubbo_proxy::v2alpha1::DubboProxy& proto_config,
     Server::Configuration::FactoryContext& context) {
-  ASSERT(!proto_config.stat_prefix().empty());
+  std::shared_ptr<Config> filter_config(new ConfigImpl(proto_config, context));
 
-  const std::string stat_prefix = fmt::format("dubbo.{}.", proto_config.stat_prefix());
-
-  return [stat_prefix, &proto_config, &context](Network::FilterManager& filter_manager) -> void {
-    filter_manager.addFilter(std::make_shared<Filter>(
-        stat_prefix, proto_config.protocol_type(), proto_config.serialization_type(),
-        context.scope(), context.dispatcher().timeSystem()));
+  return [filter_config, &context](Network::FilterManager& filter_manager) -> void {
+    filter_manager.addReadFilter(std::make_shared<ConnectionManager>(
+        *filter_config, context.random(), context.dispatcher().timeSystem()));
   };
 }
 

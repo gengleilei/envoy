@@ -16,14 +16,13 @@ namespace DubboProxy {
 
 TEST(DubboFilterConfigTest, ValidateFail) {
   NiceMock<Server::Configuration::MockFactoryContext> context;
-  EXPECT_THROW(
-      DubboProxyFilterConfigFactory().createFilterFactoryFromProto(
-          envoy::extensions::filters::network::dubbo_proxy::v2alpha1::DubboProxy(), context),
-      ProtoValidationException);
+  EXPECT_THROW(DubboProxyFilterConfigFactory().createFilterFactoryFromProto(
+                   envoy::config::filter::network::dubbo_proxy::v2alpha1::DubboProxy(), context),
+               ProtoValidationException);
 }
 
 TEST(DubboFilterConfigTest, ValidProtoConfiguration) {
-  envoy::extensions::filters::network::dubbo_proxy::v2alpha1::DubboProxy config{};
+  envoy::config::filter::network::dubbo_proxy::v2alpha1::DubboProxy config{};
 
   config.set_stat_prefix("my_stat_prefix");
 
@@ -31,21 +30,21 @@ TEST(DubboFilterConfigTest, ValidProtoConfiguration) {
   DubboProxyFilterConfigFactory factory;
   Network::FilterFactoryCb cb = factory.createFilterFactoryFromProto(config, context);
   Network::MockConnection connection;
-  EXPECT_CALL(connection, addFilter(_));
+  EXPECT_CALL(connection, addReadFilter(_));
   cb(connection);
 }
 
 TEST(DubboFilterConfigTest, DubboProxyWithEmptyProto) {
   NiceMock<Server::Configuration::MockFactoryContext> context;
   DubboProxyFilterConfigFactory factory;
-  envoy::extensions::filters::network::dubbo_proxy::v2alpha1::DubboProxy config =
-      *dynamic_cast<envoy::extensions::filters::network::dubbo_proxy::v2alpha1::DubboProxy*>(
+  envoy::config::filter::network::dubbo_proxy::v2alpha1::DubboProxy config =
+      *dynamic_cast<envoy::config::filter::network::dubbo_proxy::v2alpha1::DubboProxy*>(
           factory.createEmptyConfigProto().get());
   config.set_stat_prefix("my_stat_prefix");
 
   Network::FilterFactoryCb cb = factory.createFilterFactoryFromProto(config, context);
   Network::MockConnection connection;
-  EXPECT_CALL(connection, addFilter(_));
+  EXPECT_CALL(connection, addReadFilter(_));
   cb(connection);
 }
 

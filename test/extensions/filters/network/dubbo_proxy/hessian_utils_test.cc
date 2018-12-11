@@ -774,6 +774,93 @@ TEST(HessianUtilsTest, peekByte) {
     EXPECT_EQ(0, buffer.length());
   }
 }
+TEST(HessianUtilsTest, writeString) {
+  {
+    Buffer::OwnedImpl buffer;
+    HessianUtils::writeString(buffer, std::string(""));
+    EXPECT_STREQ(buffer.toString().c_str(), std::string{0x00}.c_str());
+    EXPECT_EQ(buffer.toString().size(), 1);
+  }
+
+  {
+    Buffer::OwnedImpl buffer;
+    std::string test_str("Hello");
+    HessianUtils::writeString(buffer, test_str);
+    EXPECT_EQ(buffer.toString().size(), 6);
+    EXPECT_STREQ(buffer.toString().c_str(), "\x5Hello");
+
+    std::string read_str = HessianUtils::readString(buffer);
+    EXPECT_EQ(read_str.size(), 5);
+    EXPECT_STREQ(read_str.c_str(), test_str.c_str());
+  }
+
+  {
+    Buffer::OwnedImpl buffer;
+    std::string test_str(32, 't');
+    std::string validate_str = "\x30\x20" + test_str;
+    std::cout << validate_str << std::endl;
+    HessianUtils::writeString(buffer, test_str);
+    EXPECT_EQ(buffer.toString().size(), 34);
+    EXPECT_STREQ(buffer.toString().c_str(), validate_str.c_str());
+
+    std::string read_str = HessianUtils::readString(buffer);
+    EXPECT_EQ(read_str.size(), 32);
+    EXPECT_STREQ(read_str.c_str(), test_str.c_str());
+  }
+
+  {
+    Buffer::OwnedImpl buffer;
+    std::string test_str(255, 't');
+    std::string validate_str = "\x30\xff" + test_str;
+    std::cout << validate_str << std::endl;
+    HessianUtils::writeString(buffer, test_str);
+    EXPECT_EQ(buffer.toString().size(), 257);
+    EXPECT_STREQ(buffer.toString().c_str(), validate_str.c_str());
+
+    std::string read_str = HessianUtils::readString(buffer);
+    EXPECT_EQ(read_str.size(), 255);
+    EXPECT_STREQ(read_str.c_str(), test_str.c_str());
+  }
+
+  {
+    Buffer::OwnedImpl buffer;
+    std::string test_str(256, 't');
+    std::string validate_str = std::string{0x31, 0x00} + test_str;
+    HessianUtils::writeString(buffer, test_str);
+    EXPECT_EQ(buffer.toString().size(), 258);
+    EXPECT_EQ(buffer.toString(), validate_str);
+
+    std::string read_str = HessianUtils::readString(buffer);
+    EXPECT_EQ(read_str.size(), 256);
+    EXPECT_STREQ(read_str.c_str(), test_str.c_str());
+  }
+
+  {
+    Buffer::OwnedImpl buffer;
+    std::string test_str(1024, 't');
+    std::string validate_str = std::string{'S', 0x04, 0x00} + test_str;
+    HessianUtils::writeString(buffer, test_str);
+    EXPECT_EQ(buffer.toString().size(), 1027);
+    EXPECT_EQ(buffer.toString(), validate_str);
+
+    std::string read_str = HessianUtils::readString(buffer);
+    EXPECT_EQ(read_str.size(), 1024);
+    EXPECT_EQ(read_str, test_str);
+  }
+
+  {
+    Buffer::OwnedImpl buffer;
+    std::string test_str(65536, 't');
+    std::string validate_str = "\x52\xff\xff" + std::string(65535, 't') + "\x1\x74";
+    HessianUtils::writeString(buffer, test_str);
+    EXPECT_EQ(buffer.toString().size(), 65540);
+    EXPECT_EQ(buffer.toString(), validate_str);
+
+    std::string read_str = HessianUtils::readString(buffer);
+    EXPECT_EQ(read_str.size(), 65536);
+    EXPECT_EQ(read_str, test_str);
+  }
+}
 
 } // namespace DubboProxy
 } // namespace NetworkFilters

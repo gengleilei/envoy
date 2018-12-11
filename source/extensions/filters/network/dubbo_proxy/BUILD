@@ -34,6 +34,10 @@ envoy_cc_library(
     hdrs = ["protocol.h"],
     deps = [
         ":buffer_helper_lib",
+        ":message_define_lib",
+        ":metadata_lib",
+        "//source/common/common:assert_lib",
+        "//source/common/config:utility_lib",
         "//source/common/singleton:const_singleton",
     ],
 )
@@ -57,7 +61,11 @@ envoy_cc_library(
         "deserializer_impl.h",
     ],
     deps = [
+        "message_define_lib",
+        "metadata_lib",
         "//include/envoy/buffer:buffer_interface",
+        "//source/common/common:assert_lib",
+        "//source/common/config:utility_lib",
         "//source/common/singleton:const_singleton",
     ],
 )
@@ -81,29 +89,12 @@ envoy_cc_library(
     srcs = ["decoder.cc"],
     hdrs = ["decoder.h"],
     deps = [
+        ":decoder_events_lib",
         ":dubbo_protocol_impl_lib",
+        ":heartbeat_response_lib",
         ":hessian_deserializer_impl_lib",
         "//source/common/buffer:buffer_lib",
         "//source/common/common:logger_lib",
-    ],
-)
-
-envoy_cc_library(
-    name = "filter_lib",
-    srcs = ["filter.cc"],
-    hdrs = ["filter.h"],
-    deps = [
-        ":decoder_lib",
-        "//include/envoy/network:connection_interface",
-        "//include/envoy/network:filter_interface",
-        "//include/envoy/stats:stats_interface",
-        "//include/envoy/stats:stats_macros",
-        "//include/envoy/stats:timespan",
-        "//source/common/buffer:buffer_lib",
-        "//source/common/common:assert_lib",
-        "//source/common/common:logger_lib",
-        "//source/common/network:filter_lib",
-        "@envoy_api//envoy/config/filter/network/dubbo_proxy/v2alpha1:dubbo_proxy_cc",
     ],
 )
 
@@ -112,10 +103,12 @@ envoy_cc_library(
     srcs = ["config.cc"],
     hdrs = ["config.h"],
     deps = [
-        ":filter_lib",
+        ":conn_manager_config_lib",
         "//include/envoy/registry",
+        "//source/common/config:filter_json_lib",
         "//source/extensions/filters/network:well_known_names",
         "//source/extensions/filters/network/common:factory_base_lib",
+        "//source/extensions/filters/network/dubbo_proxy/router:config",
         "@envoy_api//envoy/config/filter/network/dubbo_proxy/v2alpha1:dubbo_proxy_cc",
     ],
 )
@@ -125,8 +118,137 @@ envoy_cc_library(
     hdrs = ["metadata.h"],
     external_deps = ["abseil_optional"],
     deps = [
-        ":protocol_interface",
+        ":message_define_lib",
+        "//include/envoy/buffer:buffer_interface",
         "//source/common/common:macros",
         "//source/common/http:header_map_lib",
+    ],
+)
+
+envoy_cc_library(
+    name = "decoder_events_lib",
+    hdrs = ["decoder_event_handler.h"],
+    deps = [
+        ":metadata_lib",
+    ],
+)
+
+envoy_cc_library(
+    name = "message_define_lib",
+    hdrs = ["message_define.h"],
+    deps = [
+    ],
+)
+
+envoy_cc_library(
+    name = "app_exception_lib",
+    srcs = ["app_exception.cc"],
+    hdrs = ["app_exception.h"],
+    deps = [
+        ":deserializer_interface",
+        ":hessian_deserializer_impl_lib",
+        ":hessian_utils_lib",
+        ":metadata_lib",
+        ":protocol_interface",
+        "//include/envoy/buffer:buffer_interface",
+        "//source/common/buffer:buffer_lib",
+        "//source/common/common:byte_order_lib",
+        "//source/extensions/filters/network/dubbo_proxy/filters:filter_interface",
+    ],
+)
+
+envoy_cc_library(
+    name = "event_exception_lib",
+    srcs = ["event_exception.cc"],
+    hdrs = ["event_exception.h"],
+    deps = [
+        ":deserializer_interface",
+        ":hessian_deserializer_impl_lib",
+        ":metadata_lib",
+        ":protocol_interface",
+        "//include/envoy/buffer:buffer_interface",
+        "//source/extensions/filters/network/dubbo_proxy/filters:filter_interface",
+    ],
+)
+
+envoy_cc_library(
+    name = "heartbeat_response_lib",
+    srcs = ["heartbeat_response.cc"],
+    hdrs = ["heartbeat_response.h"],
+    deps = [
+        ":deserializer_interface",
+        ":hessian_deserializer_impl_lib",
+        ":metadata_lib",
+        ":protocol_interface",
+        "//include/envoy/buffer:buffer_interface",
+        "//source/extensions/filters/network/dubbo_proxy/filters:filter_interface",
+    ],
+)
+
+envoy_cc_library(
+    name = "stats_lib",
+    hdrs = ["stats.h"],
+    deps = [
+        "//include/envoy/stats:stats_interface",
+        "//include/envoy/stats:stats_macros",
+    ],
+)
+
+envoy_cc_library(
+    name = "conn_manager_config_lib",
+    srcs = ["conn_manager_config.cc"],
+    hdrs = ["conn_manager_config.h"],
+    deps = [
+        ":conn_manager_lib",
+        "//include/envoy/registry",
+        "//include/envoy/stats:stats_interface",
+        "//include/envoy/stats:stats_macros",
+        "//source/common/common:utility_lib",
+        "//source/common/config:filter_json_lib",
+        "//source/common/config:utility_lib",
+        "//source/extensions/filters/network:well_known_names",
+        "//source/extensions/filters/network/common:factory_base_lib",
+        "//source/extensions/filters/network/dubbo_proxy/filters:factory_base_lib",
+        "//source/extensions/filters/network/dubbo_proxy/filters:well_known_names",
+        "//source/extensions/filters/network/dubbo_proxy/router:router_lib",
+        "//source/extensions/filters/network/dubbo_proxy/router:router_matcher",
+        "@envoy_api//envoy/config/filter/network/dubbo_proxy/v2alpha1:dubbo_proxy_cc",
+    ],
+)
+
+envoy_cc_library(
+    name = "conn_manager_lib",
+    srcs = [
+        "active_message.cc",
+        "conn_manager.cc",
+    ],
+    hdrs = [
+        "active_message.h",
+        "conn_manager.h",
+    ],
+    external_deps = ["abseil_any"],
+    deps = [
+        ":app_exception_lib",
+        ":decoder_events_lib",
+        ":decoder_lib",
+        ":dubbo_protocol_impl_lib",
+        ":heartbeat_response_lib",
+        ":hessian_deserializer_impl_lib",
+        ":stats_lib",
+        "//include/envoy/event:deferred_deletable",
+        "//include/envoy/event:dispatcher_interface",
+        "//include/envoy/network:connection_interface",
+        "//include/envoy/network:filter_interface",
+        "//include/envoy/stats:stats_interface",
+        "//include/envoy/stats:timespan",
+        "//source/common/buffer:buffer_lib",
+        "//source/common/common:assert_lib",
+        "//source/common/common:linked_object",
+        "//source/common/common:logger_lib",
+        "//source/common/network:filter_lib",
+        "//source/common/stream_info:stream_info_lib",
+        "//source/extensions/filters/network/dubbo_proxy/filters:filter_interface",
+        "//source/extensions/filters/network/dubbo_proxy/router:router_interface",
+        "@envoy_api//envoy/config/filter/network/dubbo_proxy/v2alpha1:dubbo_proxy_cc",
     ],
 )
