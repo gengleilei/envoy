@@ -83,22 +83,6 @@ public:
   virtual ProtocolType type() const PURE;
 
   /*
-   * This interface will be deprecated,
-   * it is reserved for the purpose of compatibility with the existing Filter implementation,
-   * this interface will be deleted after the new Filter implementation code is submitted.
-   *
-   * decodes the dubbo protocol message, potentially invoking callbacks.
-   * If successful, the message is removed from the buffer.
-   *
-   * @param buffer the currently buffered dubbo data.
-   * @param context save the meta data of current messages
-   * @return bool true if a complete message was successfully consumed, false if more data
-   *                 is required.
-   * @throws EnvoyException if the data is not valid for this protocol.
-   */
-  virtual bool decode(Buffer::Instance& buffer, Context* context) PURE;
-
-  /*
    * decodes the dubbo protocol message, potentially invoking callbacks.
    * If successful, the message is removed from the buffer.
    *
@@ -134,17 +118,6 @@ public:
   virtual ~NamedProtocolConfigFactory() {}
 
   /**
-   * This interface will be deprecated,
-   * it is reserved for the purpose of compatibility with the existing Filter implementation,
-   * this interface will be deleted after the new Filter implementation code is submitted.
-   *
-   * Create a particular Dubbo protocol.
-   * @param callbacks the callbacks to be notified of protocol decodes.
-   * @return protocol instance pointer.
-   */
-  virtual ProtocolPtr createProtocol(ProtocolCallbacks& callbacks) PURE;
-
-  /**
    * Create a particular Dubbo protocol.
    * @return protocol instance pointer.
    */
@@ -171,10 +144,6 @@ public:
  * ProtocolFactoryBase provides a template for a trivial NamedProtocolConfigFactory.
  */
 template <class ProtocolImpl> class ProtocolFactoryBase : public NamedProtocolConfigFactory {
-  ProtocolPtr createProtocol(ProtocolCallbacks& callbacks) override {
-    return std::make_unique<ProtocolImpl>(&callbacks);
-  }
-
   ProtocolPtr createProtocol() override { return std::make_unique<ProtocolImpl>(); }
 
   std::string name() override { return name_; }

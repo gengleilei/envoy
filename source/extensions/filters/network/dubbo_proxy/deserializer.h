@@ -10,6 +10,7 @@
 #include "common/singleton/const_singleton.h"
 
 #include "extensions/filters/network/dubbo_proxy/message.h"
+#include "extensions/filters/network/dubbo_proxy/metadata.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -96,8 +97,8 @@ public:
    * @body_size the complete RpcInvocation size
    * @throws EnvoyException if the data is not valid for this serialization
    */
-  virtual RpcInvocationPtr deserializeRpcInvocation(Buffer::Instance& buffer,
-                                                    size_t body_size) PURE;
+  virtual void deserializeRpcInvocation(Buffer::Instance& buffer, size_t body_size,
+                                        MessageMetadataSharedPtr metadata) PURE;
   /**
    * deserialize result of an rpc call
    * If successful, the RpcResult removed from the buffer
